@@ -136,6 +136,96 @@
         font-family: "Ridibatang", serif;
         font-size: 16px;
       }
+
+      /* 🍞 빵 버튼 */
+      .btn-bread {
+        background-color: #fff7ed;
+        border: 1px solid #ffedd5;
+        color: #1f2937;
+        font-size: 1rem;
+        padding: 4px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .btn-bread:hover {
+        background-color: #ffedd5;
+        transform: translateY(-2px);
+      }
+
+      /* 모바일: 고정 높이 대신 유연한 높이 */
+      @media (max-width: 768px) {
+        .input-area {
+          height: 220px !important;
+        }
+        .output-area {
+          height: 320px !important;
+        }
+      }
+
+      /* 💬 툴팁 */
+      .tooltip-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .tooltip-wrap .tooltip-box {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e293b;
+        color: #f1f5f9;
+        font-size: 11px;
+        font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+        font-weight: 400;
+        line-height: 1.5;
+        padding: 6px 10px;
+        border-radius: 6px;
+        white-space: nowrap;
+        z-index: 50;
+        transition: opacity 0.15s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      .tooltip-wrap .tooltip-box::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #1e293b;
+      }
+      .tooltip-wrap:hover .tooltip-box {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* 🔽 토글 섹션 */
+      .toggle-body {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+        opacity: 0;
+      }
+      .toggle-body.open {
+        max-height: 200px;
+        opacity: 1;
+      }
+      .toggle-chevron {
+        transition: transform 0.3s ease;
+      }
+      .toggle-chevron.open {
+        transform: rotate(180deg);
+      }
     </style>
   </head>
   <body class="min-h-screen flex flex-col" data-theme="typography">
@@ -144,15 +234,20 @@
       class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm"
     >
       <div
-        class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center"
+        class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-3"
       >
-        <h1
-          class="text-lg md:text-xl font-bold tracking-tight text-slate-800 flex items-center"
-        >
-          <i class="fas fa-pen-nib mr-2 text-slate-600"></i>서사 구조 제어기
-        </h1>
+        <div class="flex items-center gap-2">
+          <button class="btn-bread" onclick="goHome()" title="홈으로 돌아가기">
+            🍞️
+          </button>
+          <h1
+            class="text-lg md:text-xl font-bold tracking-tight text-slate-800 flex items-center"
+          >
+            <i class="fas fa-pen-nib mr-2 text-slate-600"></i>서사 구조 제어기
+          </h1>
+        </div>
         <div class="text-xs text-slate-500 font-mono hidden md:block">
-          Ver 2.5 / Original View
+          Ver 2.6 / Original View
         </div>
       </div>
     </header>
@@ -181,36 +276,92 @@
             </div>
 
             <div class="space-y-4">
+              <!-- 문단 수 -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1.5"
-                    >최대 문단 수</label
-                  >
-                  <div class="relative">
-                    <input
-                      type="number"
-                      id="maxParagraphs"
-                      min="1"
-                      placeholder="∞"
-                      class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
-                    />
-                  </div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                    최대 문단 수
+                    <span class="tooltip-wrap">
+                      <i class="fas fa-question-circle text-slate-300 text-[11px] cursor-default"></i>
+                      <span class="tooltip-box">출력 결과의 문단(단락) 수를<br>제한합니다. 초과분은 잘립니다.</span>
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    id="maxParagraphs"
+                    min="1"
+                    placeholder="∞"
+                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
+                  />
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1.5"
-                    >문단 당 문장</label
-                  >
-                  <div class="relative">
-                    <input
-                      type="number"
-                      id="maxSentences"
-                      min="1"
-                      placeholder="∞"
-                      class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
-                    />
+                  <label class="block text-sm font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                    문단 당 문장
+                    <span class="tooltip-wrap">
+                      <i class="fas fa-question-circle text-slate-300 text-[11px] cursor-default"></i>
+                      <span class="tooltip-box">한 문단 안에 들어갈<br>최대 문장 수입니다.</span>
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    id="maxSentences"
+                    min="1"
+                    placeholder="∞"
+                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
+                  />
+                </div>
+              </div>
+
+              <!-- 전체 출력 제한 토글 -->
+              <div class="border-t border-slate-100 pt-3 mt-1">
+                <button
+                  onclick="toggleWordLimit()"
+                  class="w-full flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition group"
+                >
+                  <span class="flex items-center gap-1.5">
+                    <i class="fas fa-text-width text-[9px]"></i>
+                    전체 출력 제한
+                    <span class="tooltip-wrap">
+                      <i class="fas fa-question-circle text-slate-300 text-[11px] cursor-default normal-case"></i>
+                      <span class="tooltip-box" style="text-transform:none; letter-spacing:normal;">문단·문장 제한과 별개로,<br>전체 출력의 단어 수 또는<br>글자 수 상한을 설정합니다.</span>
+                    </span>
+                  </span>
+                  <i id="wordLimitChevron" class="fas fa-chevron-down toggle-chevron text-slate-300 group-hover:text-slate-500"></i>
+                </button>
+
+                <!-- 토글 바디 -->
+                <div id="wordLimitBody" class="toggle-body mt-3">
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                        최대 단어 수
+                      </label>
+                      <input
+                        type="number"
+                        id="maxWords"
+                        min="1"
+                        placeholder="∞"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
+                      />
+                      <p class="text-[10px] text-slate-400 text-center mt-1">영어 단어</p>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                        최대 글자 수
+                      </label>
+                      <input
+                        type="number"
+                        id="maxChars"
+                        min="1"
+                        placeholder="∞"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
+                      />
+                      <p class="text-[10px] text-slate-400 text-center mt-1">한국어 글자</p>
+                    </div>
                   </div>
                 </div>
               </div>
+
               <p class="text-xs text-slate-400 text-center mt-2">
                 * 비워두면 원본의 형태를 그대로 유지합니다.
               </p>
@@ -332,7 +483,7 @@
         <div class="lg:col-span-8 space-y-6">
           <!-- Source Input -->
           <div
-            class="glass-panel p-5 rounded-lg flex flex-col h-[300px] md:h-[350px]"
+            class="glass-panel p-5 rounded-lg flex flex-col h-[300px] md:h-[350px] input-area"
           >
             <div
               class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100"
@@ -357,7 +508,7 @@
 
           <!-- Result Output -->
           <div
-            class="glass-panel p-5 rounded-lg flex flex-col h-[400px] md:h-[500px] relative"
+            class="glass-panel p-5 rounded-lg flex flex-col h-[400px] md:h-[500px] relative output-area"
           >
             <div
               class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100"
@@ -413,11 +564,25 @@
       // DOM Elements
       const maxParagraphsInput = document.getElementById("maxParagraphs");
       const maxSentencesInput = document.getElementById("maxSentences");
+      const maxWordsInput = document.getElementById("maxWords");
+      const maxCharsInput = document.getElementById("maxChars");
       const sourceTextInput = document.getElementById("sourceText");
       const outputArea = document.getElementById("outputArea");
       const sourceCount = document.getElementById("sourceCount");
       const outputCount = document.getElementById("outputCount");
       const resultStats = document.getElementById("resultStats");
+
+      function goHome() {
+        window.location.href = "https://toastout.github.io/toast/";
+      }
+
+      function toggleWordLimit() {
+        const body = document.getElementById("wordLimitBody");
+        const chevron = document.getElementById("wordLimitChevron");
+        const isOpen = body.classList.contains("open");
+        body.classList.toggle("open", !isOpen);
+        chevron.classList.toggle("open", !isOpen);
+      }
 
       // Sample Data
       const sampleText = `나는 낡은 운동화 끈을 고쳐 매고, 모래사장 위로 첫발을 내디뎠다. '이게 정말 맞는 길일까?' 발밑에서 바스락거리는 소리가 났다. 그것은 마치 오랫동안 잊고 지냈던 내 안의 어떤 감각을 깨우는 신호 같았다.
@@ -462,8 +627,10 @@
       function resetConstraints() {
         maxParagraphsInput.value = "";
         maxSentencesInput.value = "";
+        maxWordsInput.value = "";
+        maxCharsInput.value = "";
 
-        const inputs = [maxParagraphsInput, maxSentencesInput];
+        const inputs = [maxParagraphsInput, maxSentencesInput, maxWordsInput, maxCharsInput];
         inputs.forEach((input) => {
           input.classList.add("bg-yellow-50", "ring-2", "ring-yellow-200");
           setTimeout(() => {
@@ -507,6 +674,8 @@
         // Default to empty (Unlimited) for sample so they see original structure
         maxParagraphsInput.value = "";
         maxSentencesInput.value = "";
+        maxWordsInput.value = "";
+        maxCharsInput.value = "";
 
         processText();
       }
@@ -543,6 +712,72 @@
         return formatted;
       }
 
+      function countWords(text) {
+        return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      }
+
+      function trimByWords(paragraphs, maxW) {
+        let wordCount = 0;
+        const result = [];
+        for (const para of paragraphs) {
+          // plain text 기준 단어 수 계산
+          const temp = document.createElement("div");
+          temp.innerHTML = para;
+          const plain = temp.textContent || "";
+          const words = plain.trim().split(/\s+/).filter(w => w.length > 0);
+
+          if (wordCount + words.length <= maxW) {
+            result.push(para);
+            wordCount += words.length;
+          } else {
+            // 이 문단에서 남은 단어만큼만 자르기
+            const remaining = maxW - wordCount;
+            if (remaining > 0) {
+              // HTML span 유지하며 단어 수로 자르는 건 복잡하므로
+              // plain text 기준으로 단어 잘라서 추가
+              const cutPlain = words.slice(0, remaining).join(" ");
+              result.push(cutPlain + "…");
+            }
+            break;
+          }
+        }
+        return result;
+      }
+
+      function trimByChars(paragraphs, maxC) {
+        let charCount = 0;
+        const result = [];
+        for (const para of paragraphs) {
+          const temp = document.createElement("div");
+          temp.innerHTML = para;
+          const plain = (temp.textContent || "").replace(/\s/g, "");
+          const len = plain.length;
+
+          if (charCount + len <= maxC) {
+            result.push(para);
+            charCount += len;
+          } else {
+            const remaining = maxC - charCount;
+            if (remaining > 0) {
+              // 글자 기준으로 plain text 잘라서 추가
+              const temp2 = document.createElement("div");
+              temp2.innerHTML = para;
+              const plainFull = temp2.textContent || "";
+              // 공백 포함 글자 수 기준으로 자르기 (공백 제외 remaining)
+              let noSpaceCount = 0;
+              let cutIdx = 0;
+              for (let i = 0; i < plainFull.length; i++) {
+                if (plainFull[i] !== ' ' && plainFull[i] !== '\n') noSpaceCount++;
+                if (noSpaceCount >= remaining) { cutIdx = i + 1; break; }
+              }
+              result.push(highlightContent(plainFull.slice(0, cutIdx)) + "…");
+            }
+            break;
+          }
+        }
+        return result;
+      }
+
       function processText() {
         const rawText = sourceTextInput.value;
         if (!rawText.trim()) {
@@ -557,26 +792,22 @@
         const isUnlimited =
           maxParagraphsInput.value === "" && maxSentencesInput.value === "";
 
+        const maxW = parseInt(maxWordsInput.value) || Infinity;
+        const maxC = parseInt(maxCharsInput.value) || Infinity;
+
         let structuredParagraphs = [];
         let finalSentenceCount = 0;
 
         if (isUnlimited) {
-          // Original Mode: Preserve original paragraphs (split by double newlines or single)
-          // Assuming simple preservation by splitting by newline
           const paragraphs = rawText.split(/\n+/);
-
           paragraphs.forEach((para) => {
             if (para.trim().length > 0) {
-              // Count sentences just for stats
               const sents = splitIntoSentences(para);
               finalSentenceCount += sents.length;
-
-              // Highlight
               structuredParagraphs.push(highlightContent(para));
             }
           });
         } else {
-          // Structured Mode: Re-group sentences
           const maxP = parseInt(maxParagraphsInput.value) || Infinity;
           const maxS = parseInt(maxSentencesInput.value) || Infinity;
           const sentences = splitIntoSentences(rawText);
@@ -602,6 +833,15 @@
           }
         }
 
+        // 단어 수 제한 적용
+        if (maxW !== Infinity) {
+          structuredParagraphs = trimByWords(structuredParagraphs, maxW);
+        }
+        // 글자 수 제한 적용 (공백 제외 기준)
+        if (maxC !== Infinity) {
+          structuredParagraphs = trimByChars(structuredParagraphs, maxC);
+        }
+
         // Render
         if (structuredParagraphs.length === 0) {
           outputArea.innerHTML =
@@ -618,14 +858,24 @@
           const tempDiv = document.createElement("div");
           tempDiv.innerHTML = finalHtml;
           const plainText = tempDiv.textContent || tempDiv.innerText || "";
+          const plainNoSpace = plainText.replace(/\s/g, "");
+          const wordCount = countWords(plainText);
 
-          outputCount.textContent = `${plainText.length}자 / ${finalSentenceCount}문장`;
+          // 통계 표시: 단어/글자 제한 여부에 따라 표시 내용 달라짐
+          let statParts = [`${plainNoSpace.length}자`, `${finalSentenceCount}문장`];
+          if (maxW !== Infinity || maxC === Infinity && maxW === Infinity) {
+            statParts.splice(1, 0, `${wordCount}단어`);
+          }
+          outputCount.textContent = `${plainNoSpace.length}자 / ${wordCount}단어 / ${finalSentenceCount}문장`;
           outputCount.style.opacity = "1";
 
-          const limitText = isUnlimited
-            ? "원본 유지"
-            : `${maxParagraphsInput.value}개 제한`;
-          resultStats.textContent = `생성됨: ${structuredParagraphs.length}문단 (${limitText})`;
+          // resultStats 토스트
+          const limitParts = [];
+          if (!isUnlimited) limitParts.push(`${structuredParagraphs.length}문단`);
+          if (maxW !== Infinity) limitParts.push(`≤${maxW}단어`);
+          if (maxC !== Infinity) limitParts.push(`≤${maxC}자`);
+          const limitText = limitParts.length > 0 ? limitParts.join(" · ") : "원본 유지";
+          resultStats.textContent = `생성됨: ${limitText}`;
           resultStats.style.opacity = "1";
         }
       }
