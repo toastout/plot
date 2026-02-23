@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>서사 구조 제어기 (Narrative Structure Controller)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* 리디바탕 폰트 적용 */
+      @font-face {
+        font-family: "Ridibatang";
+        src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff")
+          format("woff");
+        font-weight: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --bg-paper: #fdfbf7;
+        --text-ink: #2c2c2c;
+      }
+
+      body {
+        font-family: "Ridibatang", serif;
+        background-color: var(--bg-paper);
+        color: var(--text-ink);
+        line-height: 1.8;
+      }
+
+      /* 스크롤바 */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+      }
+
+      .glass-panel {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+      }
+
+      /* --- 테마별 스타일 정의 (CSS Variables 대신 직접 클래스 제어 방식 활용) --- */
+
+      /* 공통: 하이라이트 전환 효과 */
+      .highlight-dialogue,
+      .highlight-thought {
+        transition: all 0.3s ease;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+      }
+
+      /* ✨ 스타일 1: 순수 타이포그래피 (Default) */
+      [data-theme="typography"] .highlight-dialogue {
+        color: #1a0f0a;
+        font-weight: 500;
+      }
+      [data-theme="typography"] .highlight-thought {
+        color: #8b7b6a;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      /* ✨ 스타일 2: 은은한 하이라이트 */
+      [data-theme="subtle"] .highlight-dialogue {
+        background-color: rgba(0, 0, 0, 0.03);
+        color: #2d1b0e;
+        padding: 0.15em 0.3em;
+        border-radius: 2px;
+      }
+      [data-theme="subtle"] .highlight-thought {
+        color: #9b8b7e;
+      }
+
+      /* ✨ 스타일 3: 들여쓰기 + 라인 */
+      [data-theme="indent"] .highlight-dialogue {
+        margin-left: 0.5em; /* 1em은 너무 넓을 수 있어 조정 */
+        color: #2d1b0e;
+      }
+      [data-theme="indent"] .highlight-thought {
+        border-left: 1px solid #d5ccc0;
+        padding-left: 0.5em;
+        margin-left: 0.2em;
+        color: #8b7b6a;
+      }
+
+      /* ✨ 스타일 4: 글자 크기 차이 */
+      [data-theme="size"] .highlight-dialogue {
+        font-size: 1.05em;
+        color: #2d1b0e;
+        font-weight: 500;
+      }
+      [data-theme="size"] .highlight-thought {
+        font-size: 0.95em;
+        color: #9b8b7e;
+        opacity: 0.9;
+      }
+
+      /* ✨ 스타일 5: 하이브리드 */
+      [data-theme="hybrid"] .highlight-dialogue {
+        color: #1a0f0a;
+        font-weight: 500;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(255, 243, 224, 0.4) 50%,
+          transparent 100%
+        );
+      }
+      [data-theme="hybrid"] .highlight-thought {
+        color: #8b7b6a;
+      }
+
+      /* 테마 버튼 활성 상태 */
+      .theme-active {
+        ring-width: 2px;
+        ring-color: #374151;
+        background-color: #f8fafc;
+      }
+
+      input,
+      textarea {
+        font-family: "Ridibatang", serif;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col" data-theme="typography">
+    <!-- Header -->
+    <header
+      class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm"
+    >
+      <div
+        class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center"
+      >
+        <h1
+          class="text-lg md:text-xl font-bold tracking-tight text-slate-800 flex items-center"
+        >
+          <i class="fas fa-pen-nib mr-2 text-slate-600"></i>서사 구조 제어기
+        </h1>
+        <div class="text-xs text-slate-500 font-mono hidden md:block">
+          Ver 2.5 / Original View
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-8">
+      <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Control Panel -->
+        <div class="lg:col-span-4 space-y-6">
+          <!-- Constraints Input -->
+          <div class="glass-panel p-5 rounded-lg relative">
+            <div class="flex justify-between items-center mb-4">
+              <h2
+                class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center"
+              >
+                <i class="fas fa-sliders-h mr-2"></i> 제약 조건
+              </h2>
+              <!-- Reset Button -->
+              <button
+                onclick="resetConstraints()"
+                class="text-xs text-slate-400 hover:text-slate-600 border border-slate-200 hover:border-slate-400 px-2 py-1 rounded transition flex items-center"
+                title="입력값 초기화"
+              >
+                <i class="fas fa-undo-alt mr-1"></i> 초기화
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1.5"
+                    >최대 문단 수</label
+                  >
+                  <div class="relative">
+                    <input
+                      type="number"
+                      id="maxParagraphs"
+                      min="1"
+                      placeholder="∞"
+                      class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1.5"
+                    >문단 당 문장</label
+                  >
+                  <div class="relative">
+                    <input
+                      type="number"
+                      id="maxSentences"
+                      min="1"
+                      placeholder="∞"
+                      class="w-full p-3 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-slate-400 focus:outline-none transition text-center font-bold text-slate-700 placeholder-slate-300"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400 text-center mt-2">
+                * 비워두면 원본의 형태를 그대로 유지합니다.
+              </p>
+            </div>
+          </div>
+
+          <!-- Theme Selector -->
+          <div class="glass-panel p-5 rounded-lg">
+            <h2
+              class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center"
+            >
+              <i class="fas fa-palette mr-2"></i> 하이라이트 스타일
+            </h2>
+            <div class="flex flex-col gap-2">
+              <!-- Theme 1 -->
+              <button
+                onclick="setTheme('typography')"
+                class="theme-btn p-2 rounded border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 flex items-center justify-between transition theme-active"
+                id="btn-typography"
+              >
+                <span class="font-bold"
+                  >1. 순수 타이포그래피
+                  <span class="text-[10px] text-amber-600 ml-1 font-normal"
+                    >★ 추천</span
+                  ></span
+                >
+                <div class="text-[10px] text-slate-400">Aa</div>
+              </button>
+              <!-- Theme 2 -->
+              <button
+                onclick="setTheme('subtle')"
+                class="theme-btn p-2 rounded border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 flex items-center justify-between transition"
+                id="btn-subtle"
+              >
+                <span class="font-bold">2. 은은한 하이라이트</span>
+                <div
+                  class="w-3 h-3 rounded bg-gray-100 border border-gray-200"
+                ></div>
+              </button>
+              <!-- Theme 3 -->
+              <button
+                onclick="setTheme('indent')"
+                class="theme-btn p-2 rounded border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 flex items-center justify-between transition"
+                id="btn-indent"
+              >
+                <span class="font-bold">3. 들여쓰기 + 라인</span>
+                <div class="w-1 h-3 border-l border-slate-300"></div>
+              </button>
+              <!-- Theme 4 -->
+              <button
+                onclick="setTheme('size')"
+                class="theme-btn p-2 rounded border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 flex items-center justify-between transition"
+                id="btn-size"
+              >
+                <span class="font-bold">4. 글자 크기 차이</span>
+                <div class="flex items-end">
+                  <span class="text-[10px]">A</span
+                  ><span class="text-[14px]">A</span>
+                </div>
+              </button>
+              <!-- Theme 5 -->
+              <button
+                onclick="setTheme('hybrid')"
+                class="theme-btn p-2 rounded border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 flex items-center justify-between transition"
+                id="btn-hybrid"
+              >
+                <span class="font-bold">5. 하이브리드</span>
+                <div class="w-3 h-3 rounded bg-orange-50"></div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Action Panel -->
+          <div class="glass-panel p-5 rounded-lg">
+            <div class="flex flex-col gap-3">
+              <button
+                onclick="processText()"
+                class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3.5 rounded-lg font-bold transition shadow-md flex justify-center items-center active:scale-[0.98]"
+              >
+                <i class="fas fa-bolt mr-2 text-yellow-400"></i> 구조화 실행
+              </button>
+
+              <button
+                onclick="insertSample()"
+                class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-medium transition text-sm flex items-center justify-center gap-3 shadow-sm group"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                  ></path>
+                </svg>
+                <span>[예시] 파도의 틈새에서</span>
+              </button>
+
+              <button
+                onclick="clearAll()"
+                class="w-full text-slate-400 hover:text-red-500 py-2 text-xs transition mt-1 flex justify-center items-center group"
+              >
+                <i
+                  class="fas fa-trash-alt mr-1.5 group-hover:rotate-12 transition-transform"
+                ></i>
+                데이터 비우기
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input/Output Area -->
+        <div class="lg:col-span-8 space-y-6">
+          <!-- Source Input -->
+          <div
+            class="glass-panel p-5 rounded-lg flex flex-col h-[300px] md:h-[350px]"
+          >
+            <div
+              class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100"
+            >
+              <h2
+                class="text-xs font-bold text-slate-400 uppercase tracking-widest"
+              >
+                <i class="fas fa-keyboard mr-2"></i>원본 (Source)
+              </h2>
+              <span
+                id="sourceCount"
+                class="text-xs font-bold font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded"
+                >0자 / 0문장</span
+              >
+            </div>
+            <textarea
+              id="sourceText"
+              class="flex-grow w-full p-2 bg-transparent border-0 resize-none focus:outline-none text-base leading-relaxed placeholder-slate-300"
+              placeholder="이곳에 다듬을 텍스트를 붙여넣으세요. &#13;&#10;제약 조건을 비워두면 원본 형태 그대로 표시됩니다."
+            ></textarea>
+          </div>
+
+          <!-- Result Output -->
+          <div
+            class="glass-panel p-5 rounded-lg flex flex-col h-[400px] md:h-[500px] relative"
+          >
+            <div
+              class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100"
+            >
+              <h2
+                class="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center"
+              >
+                <i class="fas fa-quote-left mr-2 text-slate-400"></i>결과
+                (Result)
+              </h2>
+
+              <div class="flex items-center gap-3">
+                <span
+                  id="outputCount"
+                  class="text-xs font-bold font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded transition-opacity opacity-0"
+                  >0자 / 0문장</span
+                >
+                <button
+                  onclick="copyToClipboard()"
+                  class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-700 transition flex items-center shadow-sm"
+                >
+                  <i class="fas fa-copy mr-1.5"></i> 복사
+                </button>
+              </div>
+            </div>
+
+            <!-- Output Content Area -->
+            <div
+              id="outputArea"
+              class="flex-grow w-full p-2 bg-transparent overflow-y-auto text-base md:text-lg leading-loose whitespace-pre-line text-slate-800"
+            >
+              <div
+                class="h-full flex flex-col items-center justify-center text-slate-300 space-y-3"
+              >
+                <i class="fas fa-align-left text-3xl opacity-30"></i>
+                <span class="text-sm">좌측의 '구조화 실행'을 눌러주세요.</span>
+              </div>
+            </div>
+
+            <!-- Bottom Toast -->
+            <div
+              id="resultStats"
+              class="absolute bottom-6 right-6 bg-slate-800/90 backdrop-blur text-white text-xs px-4 py-2 rounded-full opacity-0 transition-opacity duration-300 shadow-lg pointer-events-none"
+            >
+              결과 없음
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // DOM Elements
+      const maxParagraphsInput = document.getElementById("maxParagraphs");
+      const maxSentencesInput = document.getElementById("maxSentences");
+      const sourceTextInput = document.getElementById("sourceText");
+      const outputArea = document.getElementById("outputArea");
+      const sourceCount = document.getElementById("sourceCount");
+      const outputCount = document.getElementById("outputCount");
+      const resultStats = document.getElementById("resultStats");
+
+      // Sample Data
+      const sampleText = `나는 낡은 운동화 끈을 고쳐 매고, 모래사장 위로 첫발을 내디뎠다. '이게 정말 맞는 길일까?' 발밑에서 바스락거리는 소리가 났다. 그것은 마치 오랫동안 잊고 지냈던 내 안의 어떤 감각을 깨우는 신호 같았다.
+
+바다는 거대하고 무심했다. 파도는 끊임없이 밀려왔다가 부서지고, 다시 밀려나갔다. 그 반복적인 리듬을 보고 있자니, 서울에서의 복잡했던 일상이 마치 다른 행성의 일처럼 아득하게 느껴졌다. '그래, 여기선 아무도 나를 모르지.' 나는 주머니에 손을 찔러 넣고, 차가운 바닷바람을 정면으로 맞았다.
+
+'행복하다.' 라고 말하기엔 어딘가 쑥스러웠다. 하지만 적어도, 지금 이 순간만큼은 내가 나로서 존재한다는 실감이 났다. 누구의 딸도, 누구의 직원도, 누구의 연인도 아닌, 그저 바다를 바라보는 한 명의 인간으로서.
+
+나는 모래 위에 털썩 주저앉았다. 수평선 너머로 해가 뉘엿뉘엿 넘어가고 있었다. 붉게 물드는 하늘을 보며 생각했다. '어쩌면 인생이란 거창한 목표를 향해 달려가는 마라톤이 아니라, 이렇게 가끔 멈춰 서서 풍경을 바라보는 산책 같은 것일지도 모른다.'
+
+나는 가방에서 작은 노트를 꺼냈다. 그리고 펜을 들어 꾹꾹 눌러 썼다.
+
+*오늘의 바다는 나를 닮았다. 거칠지만 자유롭고, 차갑지만 깊다.*
+
+노트를 덮자, 파도 소리가 한결 더 선명하게 들려왔다. 나는 자리에서 일어나 옷에 묻은 모래를 털어냈다. 가벼워진 몸과 마음으로, 다시 걷기 시작했다. 어디로 갈지는 정하지 않았다. 그저 발길 닿는 대로, 내 마음이 이끄는 대로.
+
+바닷바람에 몸이 으슬으슬해질 무렵, 나는 해안 도로 끝자락에 있는 낡은 카페로 들어갔다. 손님은 나뿐이었다. 희끗한 머리를 단정하게 빗어 넘긴 주인은 말없이 따뜻한 커피 한 잔을 내어주었다.
+
+"파도가 높네요."
+
+주인이 먼저 말을 걸어왔다. 나는 김이 모락모락 나는 잔을 감싸 쥐며 고개를 끄덕였다.
+
+"네. 보고 있으면 좀 무서울 정도로요."
+
+"무서운 게 당연하죠. 삼킬 듯이 달려드니까."
+
+주인은 마른 행주로 컵을 닦으며 창밖을 내다보았다. 그의 시선은 파도가 아니라, 그 너머의 어둠을 응시하는 듯했다.
+
+"그런데 참 이상하죠. 저렇게 사납게 부서지는데도, 결국 남는 건 고운 모래뿐이라는 게."
+
+나는 그 말을 곱씹으며 커피를 한 모금 마셨다. 쓴맛 뒤에 옅은 산미가 감돌았다. '이 사람, 뭔가 알고 있는 눈치다.'
+
+"사람 사는 것도 비슷하지 않나 싶어요. 쾅 하고 부딪칠 땐 다 깨지고 부서질 것 같은데, 지나고 보면 둥글게 깎여 있거든요. 나처럼 늙은이가 되면 그게 보여요."
+
+그는 옅게 웃으며 내 앞에 작은 초콜릿 하나를 내려놓았다.
+
+"그러니 너무 겁먹지 마요. 아가씨는 지금 모래가 되어가는 중일 테니까."
+
+나는 대답 대신 초콜릿 껍질을 깠다. '모래가 되어가는 중...' 달콤한 향이 코끝을 스쳤다. 위로라는 말 한마디 없었지만, 그 어떤 위로보다도 투박하고 단단한 무언가가 가슴 한구석에 툭, 하고 떨어지는 기분이었다.`;
+
+      // Reset to Default (Empty)
+      function resetConstraints() {
+        maxParagraphsInput.value = "";
+        maxSentencesInput.value = "";
+
+        const inputs = [maxParagraphsInput, maxSentencesInput];
+        inputs.forEach((input) => {
+          input.classList.add("bg-yellow-50", "ring-2", "ring-yellow-200");
+          setTimeout(() => {
+            input.classList.remove("bg-yellow-50", "ring-2", "ring-yellow-200");
+          }, 400);
+        });
+
+        if (sourceTextInput.value.trim()) {
+          processText();
+        }
+      }
+
+      // Theme Handling
+      function setTheme(themeName) {
+        document.querySelectorAll(".theme-btn").forEach((btn) => {
+          btn.classList.remove(
+            "theme-active",
+            "ring-2",
+            "ring-slate-700",
+            "ring-offset-2",
+            "bg-slate-50",
+          );
+        });
+        const activeBtn = document.getElementById(`btn-${themeName}`);
+        activeBtn.classList.add("theme-active");
+
+        document.body.setAttribute("data-theme", themeName);
+      }
+
+      // Real-time source counting
+      sourceTextInput.addEventListener("input", () => {
+        const text = sourceTextInput.value;
+        const sentences = splitIntoSentences(text);
+        sourceCount.textContent = `${text.length}자 / ${sentences.length}문장`;
+      });
+
+      function insertSample() {
+        sourceTextInput.value = sampleText;
+        sourceTextInput.dispatchEvent(new Event("input"));
+
+        // Default to empty (Unlimited) for sample so they see original structure
+        maxParagraphsInput.value = "";
+        maxSentencesInput.value = "";
+
+        processText();
+      }
+
+      function clearAll() {
+        sourceTextInput.value = "";
+        outputArea.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-300 space-y-3">
+                            <i class="fas fa-align-left text-3xl opacity-30"></i>
+                            <span class="text-sm">좌측의 '구조화 실행'을 눌러주세요.</span>
+                        </div>`;
+        sourceCount.textContent = "0자 / 0문장";
+        outputCount.style.opacity = "0";
+        resultStats.style.opacity = "0";
+      }
+
+      function splitIntoSentences(text) {
+        if (!text) return [];
+        // Basic splitting logic
+        const match = text.match(/[^.!?\n]+[.!?]+["']?|[^.!?\n]+$/g);
+        if (!match) return [text];
+        return match.map((s) => s.trim()).filter((s) => s.length > 0);
+      }
+
+      function highlightContent(text) {
+        // Apply common class and specific classes
+        let formatted = text.replace(
+          /"([^"]*)"/g,
+          '<span class="highlight-dialogue">"$1"</span>',
+        );
+        formatted = formatted.replace(
+          /'([^']*)'/g,
+          "<span class=\"highlight-thought\">'$1'</span>",
+        );
+        return formatted;
+      }
+
+      function processText() {
+        const rawText = sourceTextInput.value;
+        if (!rawText.trim()) {
+          outputArea.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-red-300 space-y-3">
+                            <i class="fas fa-exclamation-circle text-3xl opacity-50"></i>
+                            <span class="text-sm">분석할 데이터가 없습니다.</span>
+                        </div>`;
+          return;
+        }
+
+        // Check if constraints are empty (Original Mode)
+        const isUnlimited =
+          maxParagraphsInput.value === "" && maxSentencesInput.value === "";
+
+        let structuredParagraphs = [];
+        let finalSentenceCount = 0;
+
+        if (isUnlimited) {
+          // Original Mode: Preserve original paragraphs (split by double newlines or single)
+          // Assuming simple preservation by splitting by newline
+          const paragraphs = rawText.split(/\n+/);
+
+          paragraphs.forEach((para) => {
+            if (para.trim().length > 0) {
+              // Count sentences just for stats
+              const sents = splitIntoSentences(para);
+              finalSentenceCount += sents.length;
+
+              // Highlight
+              structuredParagraphs.push(highlightContent(para));
+            }
+          });
+        } else {
+          // Structured Mode: Re-group sentences
+          const maxP = parseInt(maxParagraphsInput.value) || Infinity;
+          const maxS = parseInt(maxSentencesInput.value) || Infinity;
+          const sentences = splitIntoSentences(rawText);
+          let currentParagraph = [];
+
+          for (let i = 0; i < sentences.length; i++) {
+            if (structuredParagraphs.length >= maxP) break;
+
+            finalSentenceCount++;
+            currentParagraph.push(highlightContent(sentences[i]));
+
+            if (currentParagraph.length >= maxS) {
+              structuredParagraphs.push(currentParagraph.join(" "));
+              currentParagraph = [];
+            }
+          }
+
+          if (
+            currentParagraph.length > 0 &&
+            structuredParagraphs.length < maxP
+          ) {
+            structuredParagraphs.push(currentParagraph.join(" "));
+          }
+        }
+
+        // Render
+        if (structuredParagraphs.length === 0) {
+          outputArea.innerHTML =
+            '<span class="text-slate-400">결과를 생성할 수 없습니다.</span>';
+          resultStats.style.opacity = "0";
+          outputCount.style.opacity = "0";
+        } else {
+          const finalHtml = structuredParagraphs
+            .map((p) => `<p class="mb-6 last:mb-0 text-justify">${p}</p>`)
+            .join("");
+          outputArea.innerHTML = finalHtml;
+
+          // Stats
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = finalHtml;
+          const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+          outputCount.textContent = `${plainText.length}자 / ${finalSentenceCount}문장`;
+          outputCount.style.opacity = "1";
+
+          const limitText = isUnlimited
+            ? "원본 유지"
+            : `${maxParagraphsInput.value}개 제한`;
+          resultStats.textContent = `생성됨: ${structuredParagraphs.length}문단 (${limitText})`;
+          resultStats.style.opacity = "1";
+        }
+      }
+
+      function copyToClipboard() {
+        const text = outputArea.innerText;
+        if (!text || text.includes("좌측의")) return;
+
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.querySelector(
+            'button[onclick="copyToClipboard()"]',
+          );
+          const originalHtml = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check mr-1"></i> 복사됨';
+          btn.classList.remove("bg-slate-800");
+          btn.classList.add("bg-green-600");
+
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove("bg-green-600");
+            btn.classList.add("bg-slate-800");
+          }, 2000);
+        });
+      }
+    </script>
+  </body>
+</html>
