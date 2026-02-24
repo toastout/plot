@@ -161,11 +161,20 @@
       /* 모바일: 고정 높이 대신 유연한 높이 */
       @media (max-width: 768px) {
         .input-area {
-          height: 260px !important;
+          height: 300px !important;
         }
         .output-area {
-          height: 380px !important;
+          height: 420px !important;
         }
+        .input-area.maximized,
+        .output-area.maximized {
+          height: 80vh !important;
+        }
+      }
+
+      /* 최대화 */
+      .panel-maximized {
+        height: 80vh !important;
       }
 
       /* ❓ 도움말 모달 */
@@ -499,42 +508,31 @@
           <!-- Action Panel -->
           <div class="glass-panel p-5 rounded-lg">
             <div class="flex flex-col gap-3">
-              <button
-                onclick="processText()"
-                class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3.5 rounded-lg font-bold transition shadow-md flex justify-center items-center active:scale-[0.98]"
-              >
-                <i class="fas fa-bolt mr-2 text-yellow-400"></i> 구조화 실행
-              </button>
-
-              <button
-                onclick="insertSample()"
-                class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-3 rounded-lg font-medium transition text-sm flex items-center justify-center gap-3 shadow-sm group"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+              <!-- 2열: 구조화 실행 | 예시 -->
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  onclick="processText()"
+                  class="bg-slate-800 hover:bg-slate-700 text-white py-3.5 rounded-lg font-bold transition shadow-md flex justify-center items-center active:scale-[0.98]"
                 >
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path
-                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-                  ></path>
-                </svg>
-                <span>[예시] 파도의 틈새에서</span>
-              </button>
+                  <i class="fas fa-bolt mr-1.5 text-yellow-400"></i> 구조화 실행
+                </button>
+
+                <!-- 예시 버튼 (title 툴팁) -->
+                <button
+                  onclick="insertSample()"
+                  title="예시 텍스트 삽입: 파도의 틈새에서"
+                  class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 py-3.5 rounded-lg font-medium transition text-sm flex items-center justify-center gap-2 shadow-sm group active:scale-[0.98]"
+                >
+                  <i class="fas fa-book-open text-slate-400 group-hover:text-slate-600 transition text-xs"></i>
+                  <span class="text-xs font-bold">예시</span>
+                </button>
+              </div>
 
               <button
                 onclick="clearAll()"
-                class="w-full text-slate-400 hover:text-red-500 py-2 text-xs transition mt-1 flex justify-center items-center group"
+                class="w-full text-slate-400 hover:text-red-500 py-2 text-xs transition flex justify-center items-center group"
               >
-                <i
-                  class="fas fa-trash-alt mr-1.5 group-hover:rotate-12 transition-transform"
-                ></i>
+                <i class="fas fa-trash-alt mr-1.5 group-hover:rotate-12 transition-transform"></i>
                 데이터 비우기
               </button>
             </div>
@@ -545,21 +543,30 @@
         <div class="lg:col-span-8 space-y-6">
           <!-- Source Input -->
           <div
-            class="glass-panel p-5 rounded-lg flex flex-col h-[300px] md:h-[350px] input-area"
+            id="sourcePanel"
+            class="glass-panel p-5 rounded-lg flex flex-col h-[360px] md:h-[420px] input-area transition-all duration-300"
           >
             <div
               class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100"
             >
-              <h2
-                class="text-xs font-bold text-slate-400 uppercase tracking-widest"
-              >
-                <i class="fas fa-keyboard mr-2"></i>원본 (Source)
+              <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-keyboard"></i> 원본
               </h2>
-              <span
-                id="sourceCount"
-                class="text-xs font-bold font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded"
-                >0자 / 0문장</span
-              >
+              <div class="flex items-center gap-2">
+                <span
+                  id="sourceCount"
+                  class="text-xs font-bold font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded"
+                  >0자 / 0문장</span
+                >
+                <button
+                  onclick="toggleMaximize('source')"
+                  id="maxBtnSource"
+                  title="최대화"
+                  class="text-slate-300 hover:text-slate-600 transition text-xs px-1.5 py-1 rounded hover:bg-slate-100"
+                >
+                  <i class="fas fa-expand-alt"></i>
+                </button>
+              </div>
             </div>
             <textarea
               id="sourceText"
@@ -570,19 +577,17 @@
 
           <!-- Result Output -->
           <div
-            class="glass-panel p-5 rounded-lg flex flex-col h-[400px] md:h-[500px] relative output-area"
+            id="outputPanel"
+            class="glass-panel p-5 rounded-lg flex flex-col h-[460px] md:h-[560px] relative output-area transition-all duration-300"
           >
             <div
               class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100"
             >
-              <h2
-                class="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center"
-              >
-                <i class="fas fa-quote-left mr-2 text-slate-400"></i>결과
-                (Result)
+              <h2 class="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-quote-left text-slate-400"></i> 결과
               </h2>
 
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
                 <span
                   id="outputCount"
                   class="text-xs font-bold font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded transition-opacity opacity-0"
@@ -593,6 +598,14 @@
                   class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-700 transition flex items-center shadow-sm"
                 >
                   <i class="fas fa-copy mr-1.5"></i> 복사
+                </button>
+                <button
+                  onclick="toggleMaximize('output')"
+                  id="maxBtnOutput"
+                  title="최대화"
+                  class="text-slate-300 hover:text-slate-600 transition text-xs px-1.5 py-1 rounded hover:bg-slate-100"
+                >
+                  <i class="fas fa-expand-alt"></i>
                 </button>
               </div>
             </div>
@@ -606,7 +619,7 @@
                 class="h-full flex flex-col items-center justify-center text-slate-300 space-y-3"
               >
                 <i class="fas fa-align-left text-3xl opacity-30"></i>
-                <span class="text-sm">좌측의 '구조화 실행'을 눌러주세요.</span>
+                <span class="text-sm">구조화 실행을 눌러주세요.</span>
               </div>
             </div>
 
@@ -636,6 +649,17 @@
 
       function goHome() {
         window.location.href = "https://toastout.github.io/toast/";
+      }
+
+      function toggleMaximize(target) {
+        const panel = document.getElementById(target === 'source' ? 'sourcePanel' : 'outputPanel');
+        const btn   = document.getElementById(target === 'source' ? 'maxBtnSource' : 'maxBtnOutput');
+        const isMax = panel.classList.contains('panel-maximized');
+        panel.classList.toggle('panel-maximized', !isMax);
+        btn.innerHTML = isMax
+          ? '<i class="fas fa-expand-alt"></i>'
+          : '<i class="fas fa-compress-alt"></i>';
+        btn.title = isMax ? '최대화' : '축소';
       }
 
       function openHelp() {
